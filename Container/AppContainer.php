@@ -6,11 +6,16 @@ class AppContainer
 {
     static protected $objects = [];
 
+    public static function isRegistered($className)
+    {
+        return isset(self::$objects[$className]);
+    }
+
     public static function register($instance)
     {
         $className = (new \ReflectionClass($instance))->getShortName();
 
-        if (isset(self::$objects[$className])) {
+        if (self::isRegistered($className)) {
             throw new \RuntimeException('class already registered');
         }
 
@@ -19,7 +24,7 @@ class AppContainer
 
     public static function getInstance($class)
     {
-        if (isset(self::$objects[$class])) {
+        if (self::isRegistered($class)) {
             return self::$objects[$class];
         }
 

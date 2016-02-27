@@ -9,6 +9,7 @@ use FastRoute\RouteParser\Std;
 use FastRoute\DataGenerator\GroupCountBased;
 use FastRoute\Dispatcher\GroupCountBased as DispatcherGroupCountBased;
 use Lib\Container\AppContainer;
+use Lib\Handler\AppErrorHandlerInterface;
 
 class App
 {
@@ -46,7 +47,13 @@ class App
 
         if ($routeInfo[0] == Dispatcher::NOT_FOUND) {
             $response->setStatusCode(404);
-            $response->setContent('');
+            if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::getInstance('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
+                ob_start();
+                AppContainer::getInstance('AppErrorHandler')->handleNotFound();
+                $response->setContent(ob_get_clean());
+            } else {
+                $response->setContent('');
+            }
             $response->send();
             exit();
         }
