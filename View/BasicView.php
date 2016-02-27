@@ -1,15 +1,18 @@
 <?php
 namespace Lib\View;
+
+use Lib\View\View;
+
 /*
  * BasicView Class
  *
- * Use factory, example: Foo::view()->render();
+ * Use factory, example: Foo::get()->render();
  *
  * Use the setVars() function to set the variables (set up for chaining)
- * example: Foo::view()->setVars(['someChildVariable' => $value])->render();
+ * example: Foo::get()->setVars(['someChildVariable' => $value])->render();
  */
 
-abstract class BasicView
+abstract class BasicView implements View
 {
     // basic data variable
     protected $data;
@@ -17,8 +20,8 @@ abstract class BasicView
     // render data
     abstract public function render();
 
-    // factory, example: Foo::view()->render();
-    public static function view()
+    // factory, example: Foo::get()->render();
+    public static function get()
     {
         return new static();
     }
