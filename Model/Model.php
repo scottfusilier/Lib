@@ -1,5 +1,4 @@
 <?php
-
 namespace Lib\Model;
 
 use Lib\Container\ConnectionContainer;
