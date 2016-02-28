@@ -13,7 +13,53 @@ use Lib\Handler\AppErrorHandlerInterface;
 
 class App
 {
-    public static function run($routes)
+    /**
+     * @var instance The reference to Singleton instance of this class
+     */
+    private static $instance;
+
+    /**
+     * Returns the Singleton instance of this class.
+     *
+     * @return Singleton of The App instance.
+     */
+    public static function getInstance()
+    {
+        if (null === static::$instance) {
+            static::$instance = new static();
+        }
+        return static::$instance;
+    }
+
+    /**
+     * Protected constructor to prevent creating a new instance of the
+     * App via the `new` operator from outside of this class.
+     */
+    protected function __construct() {}
+
+    /**
+     * Private clone method to prevent cloning of the instance of the
+     * App instance.
+     *
+     * @return void
+     */
+    private function __clone() {}
+
+    /**
+     * Private unserialize method to prevent unserializing of the App
+     * instance.
+     *
+     * @return void
+     */
+    private function __wakeup() {}
+
+    /**
+     * Run the Application
+     *
+     * @param array
+     * @return vcid
+     */
+    public function run(array $routes)
     {
         $routeCollector = new RouteCollector(new Std, new GroupCountBased);
         foreach ($routes as $route) {
@@ -29,10 +75,16 @@ class App
         $dispatcher = new DispatcherGroupCountBased($routeCollector->getData());
         $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 
-        return self::dispatchController($routeInfo);
+        return $this->dispatchController($routeInfo);
     }
 
-    private static function dispatchController(array $routeInfo)
+    /**
+     * Dispatch Controller based on route match
+     *
+     * @param array
+     * @return void
+     */
+    private function dispatchController(array $routeInfo)
     {
         $response = new Response();
         AppContainer::register($response);
