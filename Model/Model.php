@@ -3,17 +3,16 @@ namespace Lib\Model;
 
 use Lib\Container\ConnectionContainer;
 
-/*
- * Base model class.
- *
- */
-
 abstract class Model
 {
-    // db conection configuration -- redefine this in child classes (ex: non-default db connection)
+/*
+ * db conection configuration -- redefine this in child classes (ex: non-default db connection)
+ */
     protected $config = ['namespace' => DBCONFIG_NAMESPACE,'config' => 'default'];
 
-    // db connection
+/*
+ * db connection
+ */
     protected $db;
 
 /*
