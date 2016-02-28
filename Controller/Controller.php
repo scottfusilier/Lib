@@ -2,10 +2,7 @@
 namespace Lib\Controller;
 
 use Lib\Container\AppContainer;
-/*
- * Base controller class.
- *
- */
+
 abstract class Controller
 {
 

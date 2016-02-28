@@ -1,5 +1,4 @@
 <?php
-
 namespace Lib\Container;
 
 class AppContainer
