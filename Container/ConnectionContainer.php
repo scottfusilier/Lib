@@ -11,7 +11,7 @@ class ConnectionContainer
             try {
                 self::$connections[$dbConfig['name']] = new \PDO('mysql:host='.$dbConfig['host'].';dbname='.$dbConfig['database'].';charset='.$dbConfig['encoding'], $dbConfig['login'], $dbConfig['password']);
             } catch (\PDOException $e) {
-                //die($e->getMessage());
+                die('Connection Error');
             }
         }
 
