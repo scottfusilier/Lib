@@ -323,9 +323,11 @@ abstract class Model
     }
 
 /*
- *  Execute simple select
+ *  Execute a query
+ *
+ *  returns resulting rows
  */
-    public function select($query = '', $vars = [])
+    public function query($query = '', $vars = [])
     {
         try {
             $stmt = $this->db->prepare($query);
@@ -336,8 +338,10 @@ abstract class Model
 
 /*
  * Execute simple query
+ *
+ *  returns the number of affected rows
  */
-    public function statement($query = '')
+    public function execute($query = '')
     {
         try {
             return $this->db->exec($query);
