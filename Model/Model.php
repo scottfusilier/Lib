@@ -59,19 +59,6 @@ abstract class Model
     }
 
 /*
- * Create DB Table (optional, override in child if needed). Access through setUpDB()
- */
-    protected function createTable(){}
-
-/*
- * Accessor for createtable (optional).
- */
-    public function setUpDB()
-    {
-        $this->createTable();
-    }
-
-/*
  * Get table fields
  */
     public function getTableFields()
