@@ -9,7 +9,7 @@ class ConnectionContainer
     {
         if (!isset(self::$connections[$dbConfig['name']])) {
             try {
-                self::$connections[$dbConfig['name']] = new \PDO('mysql:host='.$dbConfig['host'].';dbname='.$dbConfig['database'].';charset='.$dbConfig['encoding'], $dbConfig['login'], $dbConfig['password']);
+                self::$connections[$dbConfig['name']] = new \PDO(implode(';', $dbConfig['dsn']),$dbConfig['login'],$dbConfig['password'],$dbConfig['options']);
             } catch (\PDOException $e) {
                 die('Connection Error');
             }
