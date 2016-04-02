@@ -59,6 +59,22 @@ abstract class Model
     }
 
 /*
+ * Get create table info
+ */
+    public function getCreateTable()
+    {
+        $className = (new \ReflectionClass($this))->getShortName();
+        if ($stmt = $this->db->query('SHOW CREATE TABLE '.$className)) {
+            $obj = $stmt->fetch(\PDO::FETCH_OBJ);
+            if (isset($obj->{'Create Table'})) {
+                return $obj->{'Create Table'};
+            }
+        }
+
+        return false;
+    }
+
+/*
  * Get table fields
  */
     public function getTableFields()
@@ -77,39 +93,45 @@ abstract class Model
     }
 
 /*
- * Get create table info
- */
-    public function getCreateTable()
-    {
-        $className = (new \ReflectionClass($this))->getShortName();
-        if ($stmt = $this->db->query('SHOW CREATE TABLE '.$className)) {
-            $obj = $stmt->fetch(\PDO::FETCH_OBJ);
-            if (isset($obj->{'Create Table'})) {
-                return $obj->{'Create Table'};
-            }
-        }
-
-        return false;
-    }
-
-/*
- * Get Object's Fields
+ * Get model fields
  *
  */
-    public function getFields()
+    public function getModelFields()
     {
+        $fields = [];
         $refclass = new \ReflectionClass($this);
         foreach ($refclass->getProperties() as $property) {
             if ($property->class == $refclass->name) {
                 $name = $property->getName();
-                echo "{$name} => {$this->$name}<br>";
+                $fields[] = $name;
             }
         }
+
+        return $fields;
     }
 
 /*
- * Set all of this Object's fields NULL
+ * Get object fields
  *
+ */
+    public function getFields()
+    {
+        $fields = [];
+        $refclass = new \ReflectionClass($this);
+        foreach ($refclass->getProperties() as $property) {
+            if ($property->class == $refclass->name) {
+                $name = $property->getName();
+                $fields[$name] = $this->$name;
+            }
+        }
+
+        return $fields;
+    }
+
+/*
+ * Set all of this object's fields NULL
+ *
+ * useful when using object in a loop
  */
     public function setFieldsNull()
     {
@@ -123,7 +145,7 @@ abstract class Model
     }
 
 /*
- * Set Object's Fields
+ * Set object's fields
  *
  */
     public function setFields($fields = array())
@@ -171,21 +193,9 @@ abstract class Model
         $className = (new \ReflectionClass($this))->getShortName();
         $query = 'SELECT * FROM '.$className.' WHERE %s = :value LIMIT 1';
         $query = sprintf($query, $fieldName);
+        $stmt = $this->query($query, [':value' => $value]);
 
-        $query_params = array(
-            ':value' => $value,
-        );
-
-        try {
-            $stmt = $this->db->prepare($query);
-            $result = $stmt->execute($query_params);
-        } catch (\PDOException $ex) {
-            //die("Failed to run query: " . $ex->getMessage());
-        }
-
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        return $row;
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
 /*
@@ -247,7 +257,6 @@ abstract class Model
             return $success;
         } catch (\PDOException $ex) {
             $this->db->rollBack();
-            //var_dump($sql);
             //die($ex->getMessage());
         }
     }
@@ -271,19 +280,14 @@ abstract class Model
         }
 
         if ($valid) {
-            try {
-                $sql = 'DELETE FROM '.$className.' WHERE ' .$idField. ' = :idObject LIMIT 1';
+            $sql = 'DELETE FROM '.$className.' WHERE ' .$idField. ' = :idObject LIMIT 1';
 
-                $stmt = $this->db->prepare($sql);
-                $success = $stmt->execute([':idObject' => $idObject]);
-                if ($success) {
-                    $this->setFieldsNull();
-                }
-                return $success;
-            } catch (\PDOException $ex) {
-                //var_dump($sql);
-                //die($ex->getMessage());
+            $success = $this->query($sql, [':idObject' => $idObject]);
+            if ($success) {
+                $this->setFieldsNull();
             }
+
+            return $success;
         } else {
             return false;
         }
@@ -296,14 +300,7 @@ abstract class Model
     public function getCount()
     {
         $query = 'SELECT COUNT(*) FROM '.(new \ReflectionClass($this))->getShortName();
-
-        try {
-            $stmt = $this->db->prepare($query);
-            $result = $stmt->execute();
-        } catch (\PDOException $ex) {
-            //die("Failed to run query: " . $ex->getMessage());
-        }
-
+        $stmt = $this->query($query);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         return $row['COUNT(*)'];
@@ -312,15 +309,18 @@ abstract class Model
 /*
  *  Execute a query
  *
- *  returns resulting rows
+ *  returns PDO statement object
  */
     public function query($query = '', $vars = [])
     {
         try {
             $stmt = $this->db->prepare($query);
             $stmt->execute($vars);
-            return $stmt->fetchAll(\PDO::FETCH_OBJ);
-        } catch (\PDOException $ex) {}
+        } catch (\PDOException $ex) {
+            //die($ex->getMessage());
+        }
+
+        return $stmt;
     }
 
 /*
@@ -332,6 +332,8 @@ abstract class Model
     {
         try {
             return $this->db->exec($query);
-        } catch (\PDOException $ex) {}
+        } catch (\PDOException $ex) {
+            //die($ex->getMessage());
+        }
     }
 }
