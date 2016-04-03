@@ -333,20 +333,11 @@ abstract class Model
  *
  * Return an array of model objects
  */
-    public function fetchAllObjects(array $where = [], array $vars = [], array $joins = [])
+    public function fetchAllObjects(array $where = [], array $vars = [], array $joins = [], array $clauses = [])
     {
         $ref = new \ReflectionClass($this);
         $className = $ref->getShortName();
-        $sql = 'SELECT Obj.* FROM '.$className.' Obj ';
-
-        if (!empty($joins)) {
-            $sql .= implode(' ', $joins);
-        }
-
-        if (!empty($where)) {
-            $sql .= ' WHERE '.implode(' AND ',$where);
-        }
-
+        $sql = $this->fetchAllQuery($className,$where,$joins,$clauses);
         $stmt = $this->query($sql,$vars);
 
         return $stmt->fetchAll(\PDO::FETCH_CLASS, $ref->getNamespaceName().'\\'.$className);
@@ -357,9 +348,22 @@ abstract class Model
  *
  * Return an array of associative arrays
  */
-    public function fetchAllArray(array $where = [], array $vars = [], array $joins = [])
+    public function fetchAllArray(array $where = [], array $vars = [], array $joins = [], array $clauses = [])
     {
         $className = (new \ReflectionClass($this))->getShortName();
+        $sql = $this->fetchAllQuery($className,$where,$joins,$clauses);
+        $stmt = $this->query($sql,$vars);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+/*
+ * Create fetchAll query
+ *
+ * Return string
+ */
+    public function fetchAllQuery($className = '', array $where = [], array $joins = [], array $clauses = [])
+    {
         $sql = 'SELECT Obj.* FROM '.$className.' Obj ';
 
         if (!empty($joins)) {
@@ -370,8 +374,10 @@ abstract class Model
             $sql .= ' WHERE '.implode(' AND ',$where);
         }
 
-        $stmt = $this->query($sql,$vars);
+        if (!empty($clauses)) {
+            $sql .= ' '.implode(' ', $clauses);
+        }
 
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        return $sql;
     }
 }
