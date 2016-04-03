@@ -94,7 +94,6 @@ abstract class Model
 
 /*
  * Get model fields
- *
  */
     public function getModelFields()
     {
@@ -111,8 +110,7 @@ abstract class Model
     }
 
 /*
- * Get object fields
- *
+ * Get object's fields
  */
     public function getFields()
     {
@@ -129,9 +127,7 @@ abstract class Model
     }
 
 /*
- * Set all of this object's fields NULL
- *
- * useful when using object in a loop
+ * Set object's fields NULL
  */
     public function setFieldsNull()
     {
@@ -146,9 +142,8 @@ abstract class Model
 
 /*
  * Set object's fields
- *
  */
-    public function setFields($fields = array())
+    public function setFields(array $fields = [])
     {
         foreach ($fields as $key => $value) {
             $this->$key = $value;
@@ -182,11 +177,9 @@ abstract class Model
     }
 
 /*
- * Read an Object
+ * Read an object by field
  *
- * get object by field and return it as an associative array
- *
- * returns false on failure
+ * Return associative array of object fields or false on failure
  */
     public function getByField($fieldName = '', $value = '')
     {
@@ -199,11 +192,9 @@ abstract class Model
     }
 
 /*
- *  Save an Object (set idObject null to create)
+ *  Save object in database
  *
- *  returns id of object or exception
- *
- *  Note: for new object insertions, unset idField
+ *  Return object's id on success or false on failure
  */
     public function save()
     {
@@ -262,7 +253,7 @@ abstract class Model
     }
 
 /*
- * Delete an Object
+ * Delete object from database
  *
  * Return false if Object does not exist, nulls object's fields on delete and returns true to indicate success
  */
@@ -294,7 +285,7 @@ abstract class Model
     }
 
 /*
- * Return an Object Count
+ * Return object count
  *
  */
     public function getCount()
@@ -309,7 +300,7 @@ abstract class Model
 /*
  *  Execute a query
  *
- *  returns PDO statement object
+ *  Return PDO statement object
  */
     public function query($query = '', $vars = [])
     {
@@ -326,7 +317,7 @@ abstract class Model
 /*
  * Execute simple query
  *
- *  returns the number of affected rows
+ * Return the number of affected rows
  */
     public function execute($query = '')
     {
@@ -338,9 +329,9 @@ abstract class Model
     }
 
 /*
- * Fetch all model objects for the given conditions
+ * Fetch all model objects for given conditions
  *
- * returns an array of model objects
+ * Return an array of model objects
  */
     public function fetchAll(array $where = [], array $vars = [], array $joins = [])
     {
