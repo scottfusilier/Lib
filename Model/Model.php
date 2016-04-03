@@ -336,4 +336,28 @@ abstract class Model
             //die($ex->getMessage());
         }
     }
+
+/*
+ * Fetch all model objects for the given conditions
+ *
+ * returns an array of model objects
+ */
+    public function fetchAll(array $where = [], array $vars = [], array $joins = [])
+    {
+        $ref = new \ReflectionClass($this);
+        $className = $ref->getShortName();
+        $sql = 'SELECT Obj.* FROM '.$className.' Obj ';
+
+        if (!empty($joins)) {
+            $sql .= implode(' ', $joins);
+        }
+
+        if (!empty($where)) {
+            $sql .= ' WHERE '.implode(' AND ',$where);
+        }
+
+        $stmt = $this->query($sql,$vars);
+
+        return $stmt->fetchAll(\PDO::FETCH_CLASS, $ref->getNamespaceName().'\\'.$className);
+    }
 }
