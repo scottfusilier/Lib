@@ -192,49 +192,48 @@ abstract class Model
     }
 
 /*
- *  Save object in database
+ *  Save object in database, new or exisiting
  *
- *  Return object's id on success or false on failure
+ *  Return trun on success or false on failure
  */
     public function save()
+    {
+        $idField = $this->getIdField();
+        if (!isset($this->$idField)) {
+            return $this->saveNewRecord();
+        }
+
+        return $this->saveExistingRecord();
+    }
+
+/*
+ * Save new record
+ *
+ * NOTE: not meant to use directly, use Model::save() for convenience
+ *
+ * Return true on success
+ */
+    private function saveNewRecord()
     {
         $data = array();
         $values = '';
         $refclass = new \ReflectionClass($this);
         $idField = $this->getIdField();
-
-        if (!isset($this->$idField)) {
-            //new object insert
-            $fields = '';
-            foreach ($refclass->getProperties() as $property) {
-                if ($property->class == $refclass->name) {
-                    $name = $property->name;
-                    if ($this->$name && $name != $idField) {
-                        $values .= ':'.$name.', ';
-                        $data[':'.$name] = $this->$name;
-                        $fields .= $name.', ';
-                    }
+        $fields = '';
+        foreach ($refclass->getProperties() as $property) {
+            if ($property->class == $refclass->name) {
+                $name = $property->name;
+                if ($this->$name && $name != $idField) {
+                    $values .= ':'.$name.', ';
+                    $data[':'.$name] = $this->$name;
+                    $fields .= $name.', ';
                 }
             }
-            $values = rtrim($values, ', ');
-            $fields = rtrim($fields, ', ');
-
-            $sql = 'INSERT INTO '.$refclass->getShortName().' ('.$fields.') VALUES ('.$values.')';
-        } else {
-            //existing object update
-            foreach ($refclass->getProperties() as $property) {
-                if ($property->class == $refclass->name) { 
-                    $name = $property->name;
-                    if ($this->$name && $name != $idField) {
-                        $values .= $name.' = :'.$name.', ';
-                        $data[':'.$name] = $this->$name;
-                    }
-                }
-            }
-            $values = rtrim($values, ', ');
-
-            $sql = 'UPDATE '.$refclass->getShortName().' SET '.$values.' WHERE '.$idField.' = '.$this->$idField;
         }
+        $values = rtrim($values, ', ');
+        $fields = rtrim($fields, ', ');
+
+        $sql = 'INSERT INTO '.$refclass->getShortName().' ('.$fields.') VALUES ('.$values.')';
         try {
             $stmt = $this->db->prepare($sql);
             $this->db->beginTransaction();
@@ -245,6 +244,45 @@ abstract class Model
                 //new object, update id
                 $this->$idField = $lastInsert;
             }
+
+            return $success;
+        } catch (\PDOException $ex) {
+            $this->db->rollBack();
+            //die($ex->getMessage());
+        }
+    }
+
+/*
+ * Update exisiting record
+ *
+ * NOTE: not meant to use directly, use Model::save() for convenience
+ *
+ * Return true on success
+ */
+    private function saveExistingRecord()
+    {
+        $data = array();
+        $values = '';
+        $refclass = new \ReflectionClass($this);
+        $idField = $this->getIdField();
+        foreach ($refclass->getProperties() as $property) {
+            if ($property->class == $refclass->name) {
+                $name = $property->name;
+                if ($this->$name && $name != $idField) {
+                    $values .= $name.' = :'.$name.', ';
+                    $data[':'.$name] = $this->$name;
+                }
+            }
+        }
+        $values = rtrim($values, ', ');
+
+        $sql = 'UPDATE '.$refclass->getShortName().' SET '.$values.' WHERE '.$idField.' = '.$this->$idField;
+        try {
+            $stmt = $this->db->prepare($sql);
+            $this->db->beginTransaction();
+            $success = $stmt->execute($data);
+            $this->db->commit();
+
             return $success;
         } catch (\PDOException $ex) {
             $this->db->rollBack();
