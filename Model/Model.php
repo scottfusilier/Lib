@@ -309,14 +309,18 @@ abstract class Model
         }
 
         if ($valid) {
-            $sql = 'DELETE FROM '.$className.' WHERE ' .$idField. ' = :idObject LIMIT 1';
+            try {
+                $sql = 'DELETE FROM '.$className.' WHERE ' .$idField. ' = :idObject LIMIT 1';
+                $stmt = $this->db->prepare($sql);
+                $success = $stmt->execute([':idObject' => $idObject]);
+                if ($success) {
+                    $this->setFieldsNull();
+                }
 
-            $success = $this->query($sql, [':idObject' => $idObject]);
-            if ($success) {
-                $this->setFieldsNull();
+                return $success;
+            } catch (\PDOException $ex) {
+                //die($ex->getMessage());
             }
-
-            return $success;
         } else {
             return false;
         }
