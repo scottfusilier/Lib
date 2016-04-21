@@ -59,12 +59,21 @@ abstract class Model
     }
 
 /*
+ *  Get model table name
+ *
+ *  defaults to classname, override if needed
+ */
+    protected function getTableName()
+    {
+        return (new \ReflectionClass($this))->getShortName();
+    }
+
+/*
  * Get create table info
  */
     public function getCreateTable()
     {
-        $className = (new \ReflectionClass($this))->getShortName();
-        if ($stmt = $this->db->query('SHOW CREATE TABLE '.$className)) {
+        if ($stmt = $this->db->query('SHOW CREATE TABLE '.$this->getTableName())) {
             $obj = $stmt->fetch(\PDO::FETCH_OBJ);
             if (isset($obj->{'Create Table'})) {
                 return $obj->{'Create Table'};
@@ -79,8 +88,7 @@ abstract class Model
  */
     public function getTableFields()
     {
-        $className = (new \ReflectionClass($this))->getShortName();
-        $sql = "SHOW COLUMNS FROM $className";
+        $sql = "SHOW COLUMNS FROM $this->getTableName()";
         if ($stmt = $this->db->query($sql)) {
             $fields = [];
             while ($obj = $stmt->fetch(\PDO::FETCH_OBJ)) {
@@ -183,8 +191,7 @@ abstract class Model
  */
     public function getByField($fieldName = '', $value = '')
     {
-        $className = (new \ReflectionClass($this))->getShortName();
-        $query = 'SELECT * FROM '.$className.' WHERE %s = :value LIMIT 1';
+        $query = 'SELECT * FROM '.$this->getTableName().' WHERE %s = :value LIMIT 1';
         $query = sprintf($query, $fieldName);
         $stmt = $this->query($query, [':value' => $value]);
 
@@ -233,7 +240,7 @@ abstract class Model
         $values = rtrim($values, ', ');
         $fields = rtrim($fields, ', ');
 
-        $sql = 'INSERT INTO '.$refclass->getShortName().' ('.$fields.') VALUES ('.$values.')';
+        $sql = 'INSERT INTO '.$this->getTableName().' ('.$fields.') VALUES ('.$values.')';
         try {
             $stmt = $this->db->prepare($sql);
             $this->db->beginTransaction();
@@ -276,7 +283,7 @@ abstract class Model
         }
         $values = rtrim($values, ', ');
 
-        $sql = 'UPDATE '.$refclass->getShortName().' SET '.$values.' WHERE '.$idField.' = '.$this->$idField;
+        $sql = 'UPDATE '.$this->getTableName().' SET '.$values.' WHERE '.$idField.' = '.$this->$idField;
         try {
             $stmt = $this->db->prepare($sql);
             $this->db->beginTransaction();
@@ -297,9 +304,7 @@ abstract class Model
  */
     public function delete($idObject = '')
     {
-        $className = (new \ReflectionClass($this))->getShortName();
         $idField = $this->getIdField();
-
         $valid = false;
         if (!empty($idObject)) {
             $valid = $this->fetchObject($idObject);
@@ -310,7 +315,7 @@ abstract class Model
 
         if ($valid) {
             try {
-                $sql = 'DELETE FROM '.$className.' WHERE ' .$idField. ' = :idObject LIMIT 1';
+                $sql = 'DELETE FROM '.$this->getTableName().' WHERE ' .$idField. ' = :idObject LIMIT 1';
                 $stmt = $this->db->prepare($sql);
                 $success = $stmt->execute([':idObject' => $idObject]);
                 if ($success) {
@@ -332,7 +337,7 @@ abstract class Model
  */
     public function getCount()
     {
-        $query = 'SELECT COUNT(*) FROM '.(new \ReflectionClass($this))->getShortName();
+        $query = 'SELECT COUNT(*) FROM '.$this->getTableName();
         $stmt = $this->query($query);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -392,8 +397,7 @@ abstract class Model
  */
     public function fetchAllArray(array $where = [], array $vars = [], array $joins = [], array $clauses = [])
     {
-        $className = (new \ReflectionClass($this))->getShortName();
-        $sql = $this->fetchAllQuery($className,$where,$joins,$clauses);
+        $sql = $this->fetchAllQuery($this->getTableName(),$where,$joins,$clauses);
         $stmt = $this->query($sql,$vars);
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -404,9 +408,9 @@ abstract class Model
  *
  * Return string
  */
-    public function fetchAllQuery($className = '', array $where = [], array $joins = [], array $clauses = [])
+    private function fetchAllQuery($tableName = '', array $where = [], array $joins = [], array $clauses = [])
     {
-        $sql = 'SELECT Obj.* FROM '.$className.' Obj ';
+        $sql = 'SELECT Obj.* FROM '.$tableName.' Obj ';
 
         if (!empty($joins)) {
             $sql .= implode(' ', $joins);
