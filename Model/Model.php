@@ -71,8 +71,7 @@ abstract class Model
 /*
  * Define this Objects fields based on table data
  */
-    //protected function defineFields()
-    public function defineFields()
+    protected function defineFields()
     {
         $fields = $this->getTableFields();
         if (!$fields) {
