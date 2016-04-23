@@ -6,23 +6,6 @@ class SchemaUtility extends Model
     protected function getIdField() { return '';}
 
 /*
- * Get table fields
- */
-    public function getFieldsForTable($tableName)
-    {
-        $sql = "SHOW COLUMNS FROM $tableName";
-        if ($stmt = $this->db->query($sql)) {
-            $fields = [];
-            while ($obj = $stmt->fetch(\PDO::FETCH_OBJ)) {
-                $fields[] = $obj->Field;
-            }
-            return $fields;
-        }
-
-        return false;
-    }
-
-/*
  * Get tables
  */
     public function getTables()
@@ -92,11 +75,6 @@ SQL;
 
         $filePath = $basePath.'/'.$tableName.'.php';
 
-        $fields = $this->getFieldsForTable($tableName);
-        if (!$fields) {
-            throw new \Exception($tableName.' has no fields');
-        }
-
         $primaryKey = $this->getTablePrimaryKey($tableName);
         if (!$primaryKey) {
             throw new \Exception($tableName.' has no primary key');
@@ -121,12 +99,6 @@ SQL;
 
         fwrite($file, "class $tableName extends $parentClass\n");
         fwrite($file, "{\n");
-
-        foreach ($fields as $field) {
-            fwrite($file, '    public $'.$field.";\n");
-        }
-
-        fwrite($file, "\n");
         fwrite($file, "    protected function getIdField()\n");
         fwrite($file, "    {\n");
         fwrite($file, "        return '$primaryKey';\n");
