@@ -6,11 +6,6 @@ use Lib\Container\ConnectionContainer;
 abstract class Model
 {
 /*
- * db conection configuration -- redefine this in child classes (ex: non-default db connection)
- */
-    protected $config = ['namespace' => DBCONFIG_NAMESPACE,'config' => 'default'];
-
-/*
  * db connection
  */
     protected $db;
@@ -54,8 +49,18 @@ abstract class Model
  */
     private function setConnection()
     {
-        $nameSpace = $this->config['namespace'];
-        $this->db = ConnectionContainer::getConnection($nameSpace::getDatabaseConfig($this->config['config']));
+        $namespace = DBCONFIG_NAMESPACE;
+        $this->db = ConnectionContainer::getConnection($namespace::getDatabaseConfig($this->getDatabaseConfigName()));
+    }
+
+/*
+ * db conection configuration name
+ *
+ * override in child classes for non-default configuration
+ */
+    protected function getDatabaseConfigName()
+    {
+        return 'default';
     }
 
 /*
