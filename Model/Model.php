@@ -386,7 +386,7 @@ abstract class Model
     {
         $ref = new \ReflectionClass($this);
         $className = $ref->getShortName();
-        $sql = $this->fetchAllQuery($className,$where,$joins,$clauses);
+        $sql = $this->fetchAllQuery($this->getTableName(),$where,$joins,$clauses);
         $stmt = $this->query($sql,$vars);
 
         return $stmt->fetchAll(\PDO::FETCH_CLASS, $ref->getNamespaceName().'\\'.$className);
