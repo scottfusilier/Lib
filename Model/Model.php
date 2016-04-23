@@ -69,6 +69,21 @@ abstract class Model
     }
 
 /*
+ * Define this Objects fields based on table data
+ */
+    //protected function defineFields()
+    public function defineFields()
+    {
+        $fields = $this->getTableFields();
+        if (!$fields) {
+            throw new \Exception('no fields');
+        }
+        foreach ($fields as $field) {
+            $this->{$field} = null;
+        }
+    }
+
+/*
  * Get create table info
  */
     public function getCreateTable()
@@ -88,7 +103,7 @@ abstract class Model
  */
     public function getTableFields()
     {
-        $sql = "SHOW COLUMNS FROM $this->getTableName()";
+        $sql = "SHOW COLUMNS FROM {$this->getTableName()}";
         if ($stmt = $this->db->query($sql)) {
             $fields = [];
             while ($obj = $stmt->fetch(\PDO::FETCH_OBJ)) {
@@ -101,29 +116,12 @@ abstract class Model
     }
 
 /*
- * Get model fields
- */
-    public function getModelFields()
-    {
-        $fields = [];
-        $refclass = new \ReflectionClass($this);
-        foreach ($refclass->getProperties() as $property) {
-            if ($property->class == $refclass->name) {
-                $name = $property->getName();
-                $fields[] = $name;
-            }
-        }
-
-        return $fields;
-    }
-
-/*
  * Get object's fields
  */
     public function getFields()
     {
         $fields = [];
-        $refclass = new \ReflectionClass($this);
+        $refclass = new \ReflectionObject($this);
         foreach ($refclass->getProperties() as $property) {
             if ($property->class == $refclass->name) {
                 $name = $property->getName();
@@ -139,7 +137,7 @@ abstract class Model
  */
     public function setFieldsNull()
     {
-        $refclass = new \ReflectionClass($this);
+        $refclass = new \ReflectionObject($this);
         foreach ($refclass->getProperties() as $property) {
             if ($property->class == $refclass->name) {
                 $name = $property->getName();
@@ -154,7 +152,7 @@ abstract class Model
     public function setFields(array $fields = [])
     {
         foreach ($fields as $key => $value) {
-            $this->$key = $value;
+            $this->{$key} = $value;
         }
     }
 
@@ -224,7 +222,7 @@ abstract class Model
     {
         $data = array();
         $values = '';
-        $refclass = new \ReflectionClass($this);
+        $refclass = new \ReflectionObject($this);
         $idField = $this->getIdField();
         $fields = '';
         foreach ($refclass->getProperties() as $property) {
@@ -249,7 +247,7 @@ abstract class Model
             $this->db->commit();
             if ($lastInsert) {
                 //new object, update id
-                $this->$idField = $lastInsert;
+                $this->{$idField} = $lastInsert;
             }
 
             return $success;
@@ -270,7 +268,7 @@ abstract class Model
     {
         $data = array();
         $values = '';
-        $refclass = new \ReflectionClass($this);
+        $refclass = new \ReflectionObject($this);
         $idField = $this->getIdField();
         foreach ($refclass->getProperties() as $property) {
             if ($property->class == $refclass->name) {
