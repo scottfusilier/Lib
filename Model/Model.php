@@ -201,6 +201,32 @@ abstract class Model
     }
 
 /*
+ * Begin a transaction
+ */
+    public function beginTransaction()
+    {
+        return $this->db->beginTransaction();
+    }
+
+/*
+ * Commit a transaction
+ *
+ * Note: always call after Model::save()
+ */
+    public function commitTransaction()
+    {
+        return $this->db->commit();
+    }
+
+/*
+ * Roll back a transaction
+ */
+    public function rollBackTransaction()
+    {
+        return $this->db->rollBack();
+    }
+
+/*
  *  Save object in database, new or exisiting
  *
  *  Return trun on success or false on failure
@@ -245,10 +271,8 @@ abstract class Model
         $sql = 'INSERT INTO '.$this->getTableName().' ('.$fields.') VALUES ('.$values.')';
         try {
             $stmt = $this->db->prepare($sql);
-            $this->db->beginTransaction();
             $success = $stmt->execute($data);
             $lastInsert = $this->db->lastInsertId();
-            $this->db->commit();
             if ($lastInsert) {
                 //new object, update id
                 $this->{$idField} = $lastInsert;
@@ -256,7 +280,6 @@ abstract class Model
 
             return $success;
         } catch (\PDOException $ex) {
-            $this->db->rollBack();
             //die($ex->getMessage());
         }
     }
@@ -288,13 +311,9 @@ abstract class Model
         $sql = 'UPDATE '.$this->getTableName().' SET '.$values.' WHERE '.$idField.' = '.$this->$idField;
         try {
             $stmt = $this->db->prepare($sql);
-            $this->db->beginTransaction();
-            $success = $stmt->execute($data);
-            $this->db->commit();
 
-            return $success;
+            return $stmt->execute($data);
         } catch (\PDOException $ex) {
-            $this->db->rollBack();
             //die($ex->getMessage());
         }
     }
