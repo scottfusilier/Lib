@@ -207,7 +207,7 @@ abstract class Model
     {
         $query = 'SELECT * FROM '.$this->getTableName().' WHERE %s = :value LIMIT 1';
         $query = sprintf($query, $fieldName);
-        $stmt = $this->query($query, [':value' => $value]);
+        $stmt = $this->readQuery($query, [':value' => $value]);
 
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
