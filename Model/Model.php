@@ -374,7 +374,7 @@ abstract class Model
     }
 
 /*
- *  Execute a query
+ *  Execute a read query
  *
  *  Return PDO statement object
  */
@@ -382,6 +382,23 @@ abstract class Model
     {
         try {
             $stmt = $this->getReadPdo()->prepare($query);
+            $stmt->execute($vars);
+        } catch (\PDOException $ex) {
+            //die($ex->getMessage());
+        }
+
+        return $stmt;
+    }
+
+/*
+ *  Execute a write query
+ *
+ *  Return PDO statement object
+ */
+    public function writeQuery($query = '', $vars = [])
+    {
+        try {
+            $stmt = $this->getWritePdo()->prepare($query);
             $stmt->execute($vars);
         } catch (\PDOException $ex) {
             //die($ex->getMessage());
