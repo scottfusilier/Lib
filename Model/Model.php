@@ -5,10 +5,6 @@ use Lib\Container\ConnectionContainer;
 
 abstract class Model
 {
-/*
- * db connection
- */
-    protected $db;
 
 /*
  * Return the id field for this object
@@ -37,28 +33,21 @@ abstract class Model
     }
 
 /*
- * NOTE: Use Model::get() convenience method (set up for chaining, returns instance or false if not found)
- */
-    public function __construct()
-    {
-        $this->setConnection();
-    }
-
-/*
- * Set db connection reference based on config
- */
-    private function setConnection()
-    {
-        $namespace = DBCONFIG_NAMESPACE;
-        $this->db = ConnectionContainer::getConnection($namespace::getDatabaseConfig($this->getDatabaseConfigName()));
-    }
-
-/*
- * db conection configuration name
+ * READ db conection configuration name
  *
  * override in child classes for non-default configuration
  */
-    protected function getDatabaseConfigName()
+    protected function getReadConfigName()
+    {
+        return 'default';
+    }
+
+/*
+ * WRITE db conection configuration name
+ *
+ * override in child classes for non-default configuration
+ */
+    protected function getWriteConfigName()
     {
         return 'default';
     }
@@ -71,6 +60,29 @@ abstract class Model
     protected function getTableName()
     {
         return (new \ReflectionClass($this))->getShortName();
+    }
+
+/*
+ * NOTE: Use Model::get() convenience method (set up for chaining, returns instance or false if not found)
+ */
+    public function __construct() {}
+
+/*
+ * get READ PDO connection reference based on config
+ */
+    protected function getReadPdo()
+    {
+        $namespace = DBCONFIG_NAMESPACE;
+        return ConnectionContainer::getConnection($namespace::getDatabaseConfig($this->getReadConfigName()));
+    }
+
+/*
+ * get WRITE PDO connection reference based on config
+ */
+    protected function getWritePdo()
+    {
+        $namespace = DBCONFIG_NAMESPACE;
+        return ConnectionContainer::getConnection($namespace::getDatabaseConfig($this->getWriteConfigName()));
     }
 
 /*
@@ -92,7 +104,7 @@ abstract class Model
  */
     public function getCreateTable()
     {
-        if ($stmt = $this->db->query('SHOW CREATE TABLE '.$this->getTableName())) {
+        if ($stmt = $this->getReadPdo()->query('SHOW CREATE TABLE '.$this->getTableName())) {
             $obj = $stmt->fetch(\PDO::FETCH_OBJ);
             if (isset($obj->{'Create Table'})) {
                 return $obj->{'Create Table'};
@@ -108,7 +120,7 @@ abstract class Model
     public function getTableFields()
     {
         $sql = "SHOW COLUMNS FROM {$this->getTableName()}";
-        if ($stmt = $this->db->query($sql)) {
+        if ($stmt = $this->getReadPdo()->query($sql)) {
             $fields = [];
             while ($obj = $stmt->fetch(\PDO::FETCH_OBJ)) {
                 $fields[] = $obj->Field;
@@ -205,7 +217,7 @@ abstract class Model
  */
     public function beginTransaction()
     {
-        return $this->db->beginTransaction();
+        return $this->getWritePdo()->beginTransaction();
     }
 
 /*
@@ -215,7 +227,7 @@ abstract class Model
  */
     public function commitTransaction()
     {
-        return $this->db->commit();
+        return $this->getWritePdo()->commit();
     }
 
 /*
@@ -223,7 +235,15 @@ abstract class Model
  */
     public function rollBackTransaction()
     {
-        return $this->db->rollBack();
+        return $this->getWritePdo()->rollBack();
+    }
+
+/*
+ *
+ */
+    public function inTransaction()
+    {
+        return $this->getWritePdo()->inTransaction();
     }
 
 /*
@@ -270,9 +290,10 @@ abstract class Model
 
         $sql = 'INSERT INTO '.$this->getTableName().' ('.$fields.') VALUES ('.$values.')';
         try {
-            $stmt = $this->db->prepare($sql);
+            $db = $this->getWritePdo();
+            $stmt = $db->prepare($sql);
             $success = $stmt->execute($data);
-            $lastInsert = $this->db->lastInsertId();
+            $lastInsert = $db->lastInsertId();
             if ($lastInsert) {
                 //new object, update id
                 $this->{$idField} = $lastInsert;
@@ -310,7 +331,7 @@ abstract class Model
 
         $sql = 'UPDATE '.$this->getTableName().' SET '.$values.' WHERE '.$idField.' = '.$this->$idField;
         try {
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->getWritePdo()->prepare($sql);
 
             return $stmt->execute($data);
         } catch (\PDOException $ex) {
@@ -337,7 +358,7 @@ abstract class Model
         if ($valid) {
             try {
                 $sql = 'DELETE FROM '.$this->getTableName().' WHERE ' .$idField. ' = :idObject LIMIT 1';
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->getWritePdo()->prepare($sql);
                 $success = $stmt->execute([':idObject' => $idObject]);
                 if ($success) {
                     $this->setFieldsNull();
@@ -353,27 +374,14 @@ abstract class Model
     }
 
 /*
- * Return object count
- *
- */
-    public function getCount()
-    {
-        $query = 'SELECT COUNT(*) FROM '.$this->getTableName();
-        $stmt = $this->query($query);
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        return $row['COUNT(*)'];
-    }
-
-/*
  *  Execute a query
  *
  *  Return PDO statement object
  */
-    public function query($query = '', $vars = [])
+    public function readQuery($query = '', $vars = [])
     {
         try {
-            $stmt = $this->db->prepare($query);
+            $stmt = $this->getReadPdo()->prepare($query);
             $stmt->execute($vars);
         } catch (\PDOException $ex) {
             //die($ex->getMessage());
@@ -390,7 +398,7 @@ abstract class Model
     public function execute($query = '')
     {
         try {
-            return $this->db->exec($query);
+            return $this->getWritePdo()->exec($query);
         } catch (\PDOException $ex) {
             //die($ex->getMessage());
         }
@@ -406,7 +414,7 @@ abstract class Model
         $ref = new \ReflectionClass($this);
         $className = $ref->getShortName();
         $sql = $this->fetchAllQuery($this->getTableName(),$where,$joins,$clauses);
-        $stmt = $this->query($sql,$vars);
+        $stmt = $this->readQuery($sql,$vars);
 
         return $stmt->fetchAll(\PDO::FETCH_CLASS, $ref->getNamespaceName().'\\'.$className);
     }
@@ -419,7 +427,7 @@ abstract class Model
     public function fetchAllArray(array $where = [], array $vars = [], array $joins = [], array $clauses = [])
     {
         $sql = $this->fetchAllQuery($this->getTableName(),$where,$joins,$clauses);
-        $stmt = $this->query($sql,$vars);
+        $stmt = $this->readQuery($sql,$vars);
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
