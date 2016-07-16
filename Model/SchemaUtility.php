@@ -11,7 +11,7 @@ class SchemaUtility extends Model
     public function getTables()
     {
         $sql = "SHOW TABLES";
-        if ($stmt = $this->db->query($sql)) {
+        if ($stmt = $this->getReadPdo()->query($sql)) {
             $tables = [];
             while ($obj = $stmt->fetch(\PDO::FETCH_OBJ)) {
                 $tables[] = $obj->Tables_in_Core;
@@ -36,7 +36,7 @@ class SchemaUtility extends Model
                 AND t.table_schema=DATABASE()
                 AND t.table_name='$table'
 SQL;
-        $stmt = $this->db->query($sql);
+        $stmt = $this->getReadPdo()->query($sql);
         if ($obj = $stmt->fetch(\PDO::FETCH_OBJ)) {
             return $obj->COLUMN_NAME;
         }
