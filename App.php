@@ -10,6 +10,7 @@ use FastRoute\DataGenerator\GroupCountBased;
 use FastRoute\Dispatcher\GroupCountBased as DispatcherGroupCountBased;
 use Lib\Container\AppContainer;
 use Lib\Handler\AppErrorHandlerInterface;
+use Lib\Handler\AppAuthHandlerInterface;
 
 class App
 {
@@ -85,13 +86,17 @@ class App
             case Dispatcher::FOUND :
                 return self::handleFound($routeInfo);
         }
+        return self::handleAppError(new \Exception);
+    }
 
+    private static function handleAppError(\Exception $e)
+    {
         $response = new Response();
         $response->setStatusCode(500);
 
         if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::getInstance('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
             ob_start();
-            AppContainer::getInstance('AppErrorHandler')->handleAppError();
+            AppContainer::getInstance('AppErrorHandler')->handleAppError($e);
             $response->setContent(ob_get_clean());
         } else {
             $response->setContent('');
@@ -173,13 +178,22 @@ class App
         $namespace = $info[0];
         $action = $info[1];
 
-        $controller = new $namespace();
-        ob_start();
-        // call with variables
-        $controller->{$action}($vars);
+        try {
+            $controller = new $namespace();
+            ob_start();
 
-        $response->setContent(ob_get_clean());
+            if (AppContainer::isRegistered('AppAuthHandler') && AppContainer::getInstance('AppAuthHandler') instanceOf AppAuthHandlerInterface) {
+                AppContainer::getInstance('AppAuthHandler')->handleAuth($controller, $action, $vars);
+            } else {
+                // call with variables
+                $controller->{$action}($vars);
+            }
 
-        return $response->send();
+            $response->setContent(ob_get_clean());
+
+            return $response->send();
+        } catch(\Exception $e) {
+            return self::handleAppError($e);
+        }
     }
 }
