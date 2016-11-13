@@ -301,7 +301,10 @@ abstract class Model
 
             return $success;
         } catch (\PDOException $ex) {
-            //die($ex->getMessage());
+            if ($this->inTransaction()) {
+                $this->rollBackTransaction();
+            }
+            throw $ex;
         }
     }
 
@@ -335,7 +338,10 @@ abstract class Model
 
             return $stmt->execute($data);
         } catch (\PDOException $ex) {
-            //die($ex->getMessage());
+            if ($this->inTransaction()) {
+                $this->rollBackTransaction();
+            }
+            throw $ex;
         }
     }
 
@@ -366,7 +372,10 @@ abstract class Model
 
                 return $success;
             } catch (\PDOException $ex) {
-                //die($ex->getMessage());
+                if ($this->inTransaction()) {
+                    $this->rollBackTransaction();
+                }
+                throw $ex;
             }
         } else {
             return false;
@@ -384,7 +393,7 @@ abstract class Model
             $stmt = $this->getReadPdo()->prepare($query);
             $stmt->execute($vars);
         } catch (\PDOException $ex) {
-            //die($ex->getMessage());
+            throw $ex;
         }
 
         return $stmt;
@@ -401,7 +410,10 @@ abstract class Model
             $stmt = $this->getWritePdo()->prepare($query);
             $stmt->execute($vars);
         } catch (\PDOException $ex) {
-            //die($ex->getMessage());
+            if ($this->inTransaction()) {
+                $this->rollBackTransaction();
+            }
+            throw $ex;
         }
 
         return $stmt;
@@ -417,7 +429,10 @@ abstract class Model
         try {
             return $this->getWritePdo()->exec($query);
         } catch (\PDOException $ex) {
-            //die($ex->getMessage());
+            if ($this->inTransaction()) {
+                $this->rollBackTransaction();
+            }
+            throw $ex;
         }
     }
 
