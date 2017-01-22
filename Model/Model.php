@@ -33,6 +33,16 @@ abstract class Model
     }
 
 /*
+ * Use a special function to generate primary key,
+ *
+ * override in child classes for non-autoincrement configuration
+ */
+    protected function generateIdKey()
+    {
+        return false;
+    }
+
+/*
  * READ db conection configuration name
  *
  * override in child classes for non-default configuration
@@ -271,10 +281,17 @@ abstract class Model
     private function saveNewRecord()
     {
         $data = array();
-        $values = '';
+        $values = $fields = '';
         $refclass = new \ReflectionObject($this);
         $idField = $this->getIdField();
-        $fields = '';
+
+        $idKey = $this->generateIdKey();
+        if ($idKey) {
+            $fields = $idField . ',';
+            $values = ':'.$idField.',';
+            $data[':'.$idField] = $idKey;
+        }
+
         foreach ($refclass->getProperties() as $property) {
             if ($property->class == $refclass->name) {
                 $name = $property->name;
@@ -293,10 +310,17 @@ abstract class Model
             $db = $this->getWritePdo();
             $stmt = $db->prepare($sql);
             $success = $stmt->execute($data);
-            $lastInsert = $db->lastInsertId();
-            if ($lastInsert) {
-                //new object, update id
-                $this->{$idField} = $lastInsert;
+            if ($success) {
+                if ($idKey) {
+                    // from $this->generateIdKey()
+                    $this->{$idField} = $idKey;
+                } else {
+                    // auto increment
+                    $lastInsert = $db->lastInsertId();
+                    if ($lastInsert) {
+                        $this->{$idField} = $lastInsert;
+                    }
+                }
             }
 
             return $success;
