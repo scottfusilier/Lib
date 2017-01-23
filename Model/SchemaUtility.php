@@ -1,7 +1,7 @@
 <?php
 namespace Lib\Model;
 
-class SchemaUtility extends Model
+class SchemaUtility extends SqlModel
 {
     protected function getIdField() { return '';}
 
@@ -13,8 +13,8 @@ class SchemaUtility extends Model
         $sql = "SHOW TABLES";
         if ($stmt = $this->getReadPdo()->query($sql)) {
             $tables = [];
-            while ($obj = $stmt->fetch(\PDO::FETCH_OBJ)) {
-                $tables[] = $obj->Tables_in_Core;
+            while ($obj = $stmt->fetchColumn()) {
+                $tables[] = $obj;
             }
             return $tables;
         }
