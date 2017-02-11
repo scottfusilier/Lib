@@ -9,9 +9,9 @@
     ],
     "license": "MIT",
     "require": {
-        "php": ">=5.3.9",
+        "php": ">=5.5.0",
         "symfony/http-foundation": "^2.7",
-        "nikic/fast-route": "~0.3"
+        "nikic/fast-route": "^1.2"
     },
     "autoload": {
         "psr-4": { "Lib\\": "" }
