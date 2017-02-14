@@ -82,8 +82,7 @@ abstract class SqlModel implements Model
  */
     protected function getReadPdo()
     {
-        $namespace = DBCONFIG_NAMESPACE;
-        return ConnectionContainer::getConnection($namespace::getDatabaseConfig($this->getReadConfigName()));
+        return ConnectionContainer::get($this->getReadConfigName());
     }
 
 /*
@@ -91,8 +90,7 @@ abstract class SqlModel implements Model
  */
     protected function getWritePdo()
     {
-        $namespace = DBCONFIG_NAMESPACE;
-        return ConnectionContainer::getConnection($namespace::getDatabaseConfig($this->getWriteConfigName()));
+        return ConnectionContainer::get($this->getWriteConfigName());
     }
 
 /*

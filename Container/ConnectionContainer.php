@@ -3,26 +3,26 @@ namespace Lib\Container;
 
 class ConnectionContainer
 {
-    private static $connections = array();
+    private static $objects = [];
+    private static $callables = [];
 
-    public static function getConnection($dbConfig = array())
+    public static function register($key, Callable $value)
     {
-        if (!isset(self::$connections[$dbConfig['name']])) {
-            try {
-                self::$connections[$dbConfig['name']] = new \PDO(implode(';', $dbConfig['dsn']),$dbConfig['login'],$dbConfig['password'],$dbConfig['options']);
-            } catch (\PDOException $e) {
-                die('Connection Error');
-            }
-        }
-
-        return self::$connections[$dbConfig['name']];
+         return self::$callables[$key] = $value;
     }
 
-    public static function cleanUp()
+    public static function get($key)
     {
-        foreach (self::$connections as $key => $value) {
-            unset(self::$connections[$key]);
-            unset($value);
+        if (empty(self::$callables[$key])) {
+            throw new \Exception('key ' . $key . ' not registered in container');
         }
+
+        if (!empty(self::$objects[$key])) {
+            return self::$objects[$key];
+        }
+
+        $callable = self::$callables[$key];
+
+        return self::$objects[$key] = $callable();
     }
 }
