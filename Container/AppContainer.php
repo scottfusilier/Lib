@@ -3,32 +3,28 @@ namespace Lib\Container;
 
 class AppContainer
 {
-    static protected $objects = [];
+    private static $objects = [];
+    private static $callables = [];
 
-    public static function isRegistered($className)
+    public static function isRegistered($key)
     {
-        return isset(self::$objects[$className]);
+        return !empty(self::$callables[$key]);
     }
 
-    public static function register($instance)
+    public static function register($key, Callable $value)
     {
-        $className = (new \ReflectionClass($instance))->getShortName();
-
-        if (self::isRegistered($className)) {
-            throw new \RuntimeException('class already registered');
-        }
-
-        return self::$objects[$className] = $instance;
+         return self::$callables[$key] = $value;
     }
 
-    public static function getInstance($class)
+    public static function get($key)
     {
-        if (self::isRegistered($class)) {
-            return self::$objects[$class];
+        if (empty(self::$callables[$key])) {
+            throw new \Exception('key ' . $key . ' not registered in container');
         }
-
-        $obj = new $class;
-
-        return self::$objects[$class] = $obj;
+        if (!empty(self::$objects[$key])) {
+            return self::$objects[$key];
+        }
+        $callable = self::$callables[$key];
+        return self::$objects[$key] = $callable();
     }
 }
