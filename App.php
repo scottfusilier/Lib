@@ -101,7 +101,7 @@ class App
         $response->withStatus(500);
 
         if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
-            return $response->setContent(AppContainer::get('AppErrorHandler')->handleAppError($e))->send();
+            $response->getBody()->write((AppContainer::get('AppErrorHandler')->handleAppError($e)));
         }
 
         return self::sendResponse($response);
@@ -116,7 +116,7 @@ class App
         //TODO: set header to indicate allowable methods
         $allowedMethods = $routeInfo;
 
-        $response->setStatusCode(405);
+        $response->withStatus(405);
         return self::sendResponse($response);
     }
 
