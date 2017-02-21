@@ -1,10 +1,10 @@
 <?php
-namespace Lib\MiddleWare;
+namespace Lib\Middleware;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
-interface MiddleWareInterface
+interface MiddlewareInterface
 {
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, Callable $next);
 }
