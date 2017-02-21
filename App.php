@@ -1,8 +1,8 @@
 <?php
 namespace Lib;
 
-use Symfony\Component\HttpFoundation\Request as Request;
-use Symfony\Component\HttpFoundation\Response as Response;
+use GuzzleHttp\Psr7\ServerRequest as Request;
+use GuzzleHttp\Psr7\Response as Response;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use FastRoute\RouteParser\Std;
@@ -73,10 +73,10 @@ class App
     {
         $routeCollector = $routes(new RouteCollector(new Std, new GroupCountBased));
 
-        $request = Request::createFromGlobals();
+        $request = Request::fromGlobals();
 
         $httpMethod = $request->getMethod();
-        $uri = parse_url($request->getRequestUri(), PHP_URL_PATH);
+        $uri = parse_url($request->getUri(), PHP_URL_PATH);
 
         $dispatcher = new DispatcherGroupCountBased($routeCollector->getData());
         $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
@@ -98,13 +98,13 @@ class App
     private static function handleAppError(\Exception $e)
     {
         $response = new Response();
-        $response->setStatusCode(500);
+        $response->withStatus(500);
 
         if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
             return $response->setContent(AppContainer::get('AppErrorHandler')->handleAppError($e))->send();
         }
 
-        return $response->setContent('')->send();
+        return self::sendResponse($response);
     }
 
 /**
@@ -113,11 +113,11 @@ class App
     private static function handleMethodNotAllowed(array $routeInfo)
     {
         $response = new Response();
-        //TODO: set header to indicate allowable, or don't
+        //TODO: set header to indicate allowable methods
         $allowedMethods = $routeInfo;
 
         $response->setStatusCode(405);
-        return $response->setContent('')->send();
+        return self::sendResponse($response);
     }
 
 /**
@@ -126,13 +126,13 @@ class App
     private static function handleNotFound(array $routeInfo)
     {
         $response = new Response();
-        $response->setStatusCode(404);
+        $response->withStatus(404);
 
         if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
-            return $response->setContent(AppContainer::get('AppErrorHandler')->handleNotFound())->send();
+            $response->getBody()->write(AppContainer::get('AppErrorHandler')->handleNotFound());
         }
 
-        return $response->setContent('')->send();
+        return self::sendResponse($response);
     }
 
 /**
@@ -150,7 +150,7 @@ class App
                 throw new \RuntimeException('no middleware registered');
             }
 
-            return $middleware($request,$response,function(){})->send();
+            return self::sendResponse($middleware($request,$response,function(){}));
         } catch(\Exception $e) {
             return self::handleAppError($e);
         }
@@ -176,7 +176,7 @@ class App
  */
     private static function pushControllerRoute(array $routeInfo)
     {
-        $vars = self::consolidateVars($routeInfo[2]);
+        $vars = $routeInfo[2];
 
         // handle regular controller based route
         $info = explode('::', $routeInfo[1]);
@@ -204,7 +204,7 @@ class App
  */
     private static function pushCallableRoute(array $routeInfo)
     {
-        $vars = self::consolidateVars($routeInfo[2]);
+        $vars = $routeInfo[2];
         $handler = $routeInfo[1];
 
         $handlerWrap = function ($request, $response) use ($handler,$vars) {
@@ -223,23 +223,6 @@ class App
                 self::pushMiddleware($wm);
             }
         }
-    }
-
-/**
- * Collect vars and consolidate
- */
-    private static function consolidateVars(array $vars)
-    {
-        if (!empty($_POST)) {
-            $vars += $_POST;
-        }
-        if (!empty($_GET)) {
-            $vars += $_GET;
-        }
-        unset($_POST);
-        unset($_GET);
-
-        return $vars;
     }
 
 /**
@@ -273,5 +256,19 @@ class App
     public static function setGlobaleMiddlewares(array $value)
     {
          self::$globalMiddlewares = $value;
+    }
+
+/**
+ * Send the http response
+ */
+    private static function sendResponse(Response $response)
+    {
+        // send response headers.
+        foreach ($response->getHeaders() as $name => $values) {
+            echo $name . ': ' . implode(', ', $values) . "\r\n";
+        }
+
+        // send response body
+        echo $response->getBody();
     }
 }

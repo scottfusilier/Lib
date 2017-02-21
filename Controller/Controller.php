@@ -1,32 +1,18 @@
 <?php
 namespace Lib\Controller;
 
+use GuzzleHttp\Psr7\ServerRequest as Request;
+use GuzzleHttp\Psr7\Response as Response;
 use Lib\Container\AppContainer;
 
 abstract class Controller
 {
 
 /*
- * return a 404 response
+ * Redirect convenience method
  */
-    protected function fourOhFour()
+    protected function redirect(Response $response, $location = '/')
     {
-        AppContainer::getInstance('Response')->setStatusCode(404);
-    }
-
-/*
- * return a 401 response
- */
-    protected function unAuthorized()
-    {
-        AppContainer::getInstance('Response')->setStatusCode(401);
-    }
-
-/*
- *  wrapper for the header function
- */
-    protected function redirect($location = '/')
-    {
-        AppContainer::getInstance('Response')->setStatusCode(302)->headers->set('Location', $location);
+        return $response->withStatus(302)->withHeader('Location', $location);
     }
 }

@@ -1,10 +1,10 @@
 <?php
 namespace Lib\Template;
 
-use Lib\View\BasicView;
+use Lib\View\View;
 
 interface Layout
 {
     public static function get();
-    public function render(BasicView $content);
+    public function render(View $content);
 }

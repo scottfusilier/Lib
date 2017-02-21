@@ -1,7 +1,7 @@
 <?php
 namespace Lib\Template;
 
-use Lib\View\BasicView;
+use Lib\View\View;
 
 abstract class Template implements Layout
 {
@@ -10,5 +10,5 @@ abstract class Template implements Layout
         return new static();
     }
 
-    public abstract function render(BasicView $content);
+    public abstract function render(View $content);
 }
