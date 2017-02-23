@@ -98,13 +98,12 @@ class App
     private static function handleAppError(\Exception $e)
     {
         $response = new Response();
-        $response->withStatus(500);
 
         if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
             $response->getBody()->write((AppContainer::get('AppErrorHandler')->handleAppError($e)));
         }
 
-        return self::sendResponse($response);
+        return self::sendResponse($response->withStatus(500));
     }
 
 /**
@@ -116,8 +115,7 @@ class App
         //TODO: set header to indicate allowable methods
         $allowedMethods = $routeInfo;
 
-        $response->withStatus(405);
-        return self::sendResponse($response);
+        return self::sendResponse($response->withStatus(405));
     }
 
 /**
@@ -126,13 +124,12 @@ class App
     private static function handleNotFound(array $routeInfo)
     {
         $response = new Response();
-        $response->withStatus(404);
 
         if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
             $response->getBody()->write(AppContainer::get('AppErrorHandler')->handleNotFound());
         }
 
-        return self::sendResponse($response);
+        return self::sendResponse($response->withStatus(404));
     }
 
 /**
@@ -263,9 +260,17 @@ class App
  */
     private static function sendResponse(Response $response)
     {
-        // send response headers.
-        foreach ($response->getHeaders() as $name => $values) {
-            echo $name . ': ' . implode(', ', $values) . "\r\n";
+        // Send response
+        if (!headers_sent()) {
+            // Status
+            header(sprintf('HTTP/%s %s %s',$response->getProtocolVersion(),$response->getStatusCode(),$response->getReasonPhrase()));
+
+            // Headers
+            foreach ($response->getHeaders() as $name => $values) {
+                foreach ($values as $value) {
+                    header(sprintf('%s: %s', $name, $value), false);
+                }
+            }
         }
 
         // send response body
