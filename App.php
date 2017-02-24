@@ -69,7 +69,7 @@ class App
  * Run the Application
  *
  */
-    public function run($routes)
+    public function run(Callable $routes)
     {
         $routeCollector = $routes(new RouteCollector(new Std, new GroupCountBased));
 
@@ -180,7 +180,7 @@ class App
         $namespace = $info[0];
         $action = $info[1];
 
-        $handlerWrap = function ($request, $response) use ($namespace, $action, $vars) {
+        $handlerWrap = function (Request $request, Response $response) use ($namespace, $action, $vars) {
             $controller = new $namespace();
             return $controller->{$action}($request,$response,$vars);
         };
@@ -204,7 +204,7 @@ class App
         $vars = $routeInfo[2];
         $handler = $routeInfo[1];
 
-        $handlerWrap = function ($request, $response) use ($handler,$vars) {
+        $handlerWrap = function (Request $request, Response $response) use ($handler,$vars) {
             return $handler($request, $response, $vars);
         };
         return self::pushMiddleware($handlerWrap);
@@ -232,7 +232,7 @@ class App
             return self::$middlewareStack = $Middleware;
         }
 
-        self::$middlewareStack = function ($request, $response, callable $next) use ($oldStack, $Middleware) {
+        self::$middlewareStack = function (Request $request, Response $response, callable $next) use ($oldStack, $Middleware) {
             return $Middleware($request, $response, function ($req, $res) use ($next, $oldStack) {
                 return $oldStack($req, $res, $next);
             });
