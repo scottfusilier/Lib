@@ -69,7 +69,7 @@ class App
  * Run the Application
  *
  */
-    public function run(Callable $routes)
+    public function run(callable $routes)
     {
         $routeCollector = $routes(new RouteCollector(new Std, new GroupCountBased));
 
@@ -171,13 +171,7 @@ class App
 
         // add per-route middleware group
         if (!empty($handler[1])) {
-            if (empty(self::$middlewares[$handler[1]])) {
-                throw new \InvalidArgumentException('no such middleware');
-            }
-            $middlewares = self::$middlewares[$handler[1]]; // always array, see self::addMiddlewares
-            foreach ($middlewares as $mw) {
-                self::pushMiddleware($mw);
-            }
+            self::pushRouteMiddlewares($handler[1]);
         }
 
         self::pushGlobalMiddlewares();
@@ -230,14 +224,34 @@ class App
     }
 
 /**
+ * Apply per-route middleware group to the runtime stack
+ */
+    private static function pushRouteMiddlewares($groupName)
+    {
+        if (empty(self::$middlewares[$groupName])) {
+            throw new \InvalidArgumentException('no such middleware');
+        }
+
+        return self::pushMiddlewares(self::$middlewares[$groupName]); // see self::addMiddlewares
+    }
+
+/**
  * Apply global middlewares to the runtime stack if they exist
  */
     private static function pushGlobalMiddlewares()
     {
         if (is_array(self::$globalMiddlewares)) {
-            foreach (self::$globalMiddlewares as $mw) {
-                self::pushMiddleware($wm);
-            }
+            return self::pushMiddlewares(self::$globalMiddlewares);
+        }
+    }
+
+/**
+ * Apply a group of middlewares to the runtime stack
+ */
+    private static function pushMiddlewares(array $middlewares)
+    {
+        foreach ($middlewares as $mw) {
+            self::pushMiddleware($mw);
         }
     }
 
@@ -269,7 +283,7 @@ class App
 /**
  * Add global middlewares that will be applied to all routes
  */
-    public static function setGlobaleMiddlewares(array $value)
+    public static function setGlobalMiddlewares(array $value)
     {
          self::$globalMiddlewares = $value;
     }
