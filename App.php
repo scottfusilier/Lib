@@ -159,10 +159,25 @@ class App
     private static function prepareRuntimeStack(array $routeInfo)
     {
         $handler = $routeInfo[1];
-        if (is_object($handler) &&  (new \ReflectionFunction($handler))->isClosure()) {
+        if (!is_array($handler)) {
+            throw new \InvalidArgumentException('route handler must be passed in an array');
+        }
+
+        if (is_object($handler[0]) && is_callable($handler[0])) {
             self::pushCallableRoute($routeInfo);
         } else {
             self::pushControllerRoute($routeInfo);
+        }
+
+        // add per-route middleware group
+        if (!empty($handler[1])) {
+            if (empty(self::$middlewares[$handler[1]])) {
+                throw new \InvalidArgumentException('no such middleware');
+            }
+            $middlewares = self::$middlewares[$handler[1]]; // always array, see self::addMiddlewares
+            foreach ($middlewares as $mw) {
+                self::pushMiddleware($mw);
+            }
         }
 
         self::pushGlobalMiddlewares();
@@ -175,25 +190,27 @@ class App
     {
         $vars = $routeInfo[2];
 
-        // handle regular controller based route
-        $info = explode('::', $routeInfo[1]);
+        $routeHandlerArray = $routeInfo[1];
+        $info = explode('::', $routeHandlerArray[0]);
         $namespace = $info[0];
-        $action = $info[1];
 
-        $handlerWrap = function (Request $request, Response $response) use ($namespace, $action, $vars) {
-            $controller = new $namespace();
-            return $controller->{$action}($request,$response,$vars);
-        };
-
-        self::pushMiddleware($handlerWrap);
-
-        // add per-route middleware group
-        if (!empty($info[2])) {
-            $middlewares = is_array(self::$middlewares[$info[2]]) ? self::$middlewares[$info[2]] : [];
-            foreach ($middlewares as $mw) {
-                self::pushMiddleware($mw);
-            }
+        if (!empty($info[1])) {
+            // handler class with method call
+            $action = $info[1];
+            $handlerWrap = function (Request $request, Response $response) use ($namespace, $action, $vars) {
+                $controller = new $namespace();
+                return $controller->{$action}($request,$response,$vars);
+            };
+        } else {
+            // handler class with __invoke call
+            $handlerWrap = function (Request $request, Response $response) use ($namespace, $vars) {
+                $controller = new $namespace();
+                return $controller($request,$response,$vars);
+            };
         }
+
+        return self::pushMiddleware($handlerWrap);
+
     }
 
 /**
@@ -202,11 +219,13 @@ class App
     private static function pushCallableRoute(array $routeInfo)
     {
         $vars = $routeInfo[2];
-        $handler = $routeInfo[1];
+        $handlerArray = $routeInfo[1];
+        $handler = $handlerArray[0];
 
         $handlerWrap = function (Request $request, Response $response) use ($handler,$vars) {
             return $handler($request, $response, $vars);
         };
+
         return self::pushMiddleware($handlerWrap);
     }
 
