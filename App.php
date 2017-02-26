@@ -99,7 +99,7 @@ class App
     {
         $response = new Response();
 
-        if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
+        if (AppContainer::has('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
             $response->getBody()->write((AppContainer::get('AppErrorHandler')->handleAppError($e)));
         }
 
@@ -125,7 +125,7 @@ class App
     {
         $response = new Response();
 
-        if (AppContainer::isRegistered('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
+        if (AppContainer::has('AppErrorHandler') && AppContainer::get('AppErrorHandler') instanceOf AppErrorHandlerInterface) {
             $response->getBody()->write(AppContainer::get('AppErrorHandler')->handleNotFound());
         }
 

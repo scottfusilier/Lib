@@ -6,7 +6,7 @@ class AppContainer
     private static $objects = [];
     private static $callables = [];
 
-    public static function isRegistered($key)
+    public static function has($key)
     {
         return !empty(self::$callables[$key]);
     }
