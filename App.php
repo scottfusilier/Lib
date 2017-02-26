@@ -185,6 +185,7 @@ class App
         $vars = $routeInfo[2];
 
         $routeHandlerArray = $routeInfo[1];
+        AppContainer::register('Route', function() use ($routeHandlerArray){return $routeHandlerArray[0];});
         $info = explode('::', $routeHandlerArray[0]);
         $namespace = $info[0];
 
