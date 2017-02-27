@@ -15,4 +15,13 @@ abstract class Controller
     {
         return $response->withStatus(302)->withHeader('Location', $location);
     }
+
+/*
+ * JSON response convenience method
+ */
+    protected function json(Response $response,$content)
+    {
+        $response->getBody()->write(json_encode($content));
+        return $response->withHeader('Content-Type','application/json; charset=utf-8');
+    }
 }
