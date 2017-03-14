@@ -7,7 +7,6 @@ use Lib\Container\AppContainer;
 
 abstract class Controller
 {
-
 /*
  * Redirect convenience method
  */
@@ -23,5 +22,14 @@ abstract class Controller
     {
         $response->getBody()->write(json_encode($content));
         return $response->withHeader('Content-Type','application/json; charset=utf-8');
+    }
+
+/*
+ * Render convenience method
+ */
+    protected function render($response,$content)
+    {
+        $response->getBody()->write($content);
+        return $response;
     }
 }
