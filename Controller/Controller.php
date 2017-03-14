@@ -27,7 +27,7 @@ abstract class Controller
 /*
  * Render convenience method
  */
-    protected function render($response,$content)
+    protected function render(Response $response,$content)
     {
         $response->getBody()->write($content);
         return $response;
