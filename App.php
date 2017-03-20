@@ -294,20 +294,29 @@ class App
  */
     private static function sendResponse(Response $response)
     {
-        // Send response
-        if (!headers_sent()) {
-            // Status
-            header(sprintf('HTTP/%s %s %s',$response->getProtocolVersion(),$response->getStatusCode(),$response->getReasonPhrase()));
+        if (headers_sent()) {
+             throw new RuntimeException('Unable to send response; headers already sent');
+        }
 
-            // Headers
-            foreach ($response->getHeaders() as $name => $values) {
-                foreach ($values as $value) {
-                    header(sprintf('%s: %s', $name, $value), false);
-                }
+        // Status
+        header(sprintf('HTTP/%s %s %s',$response->getProtocolVersion(),$response->getStatusCode(),$response->getReasonPhrase()));
+
+        // Headers
+        foreach ($response->getHeaders() as $name => $values) {
+            foreach ($values as $value) {
+                header(sprintf('%s: %s', $name, $value), false);
             }
         }
 
-        // send response body
-        echo $response->getBody();
+        // send response body stream
+        $stream = $response->getBody();
+
+        if ($stream->isSeekable()) {
+            $stream->rewind();
+        }
+
+        while (!$stream->eof()) {
+            echo $stream->read(4096);
+        }
     }
 }
